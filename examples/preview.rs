@@ -46,16 +46,16 @@ fn main() {
     let out = Path::new(&out);
     std::fs::create_dir_all(out).unwrap();
     let mut s = Stopwatch::default();
-    save(out, "ready", &s, 0);
+    save(out, "ready-round", &s, 0);
     s.press(Button::StartPause, 0);
-    save(out, "running", &s, 83_470_000);
+    save(out, "running-round", &s, 83_470_000);
     s.press(Button::LapReset, 74_320_000);
-    save(out, "lap", &s, 83_470_000);
+    save(out, "lap-round", &s, 83_470_000);
     s.press(Button::StartPause, 83_470_000);
-    save(out, "paused", &s, 100_000_000);
+    save(out, "paused-round", &s, 100_000_000);
     let mut long = Stopwatch::default();
     long.press(Button::StartPause, 0);
-    save(out, "hours", &long, 45_296_780_000);
+    save(out, "hours-round", &long, 45_296_780_000);
     if env::args().any(|arg| arg == "--animate") {
         let frames = out.join("frames");
         std::fs::create_dir_all(&frames).unwrap();
