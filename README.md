@@ -6,7 +6,7 @@ A minimal, button-only Rust stopwatch for the Waveshare ESP32-S3-Touch-AMOLED-1.
 
 | Ready | Running | Lap | Hours |
 |---|---|---|---|
-| <img src="previews/ready-hold.png" width="180" alt="Ready stopwatch on a black circular display"> | <img src="previews/running-total.gif" width="180" alt="Running stopwatch animation showing only the total time"> | <img src="previews/lap-charcoal.png" width="180" alt="Stopwatch showing a recorded lap below the total"> | <img src="previews/hours-charcoal.png" width="180" alt="Stopwatch showing 12:34:56.78 with hour digits"> |
+| <img src="previews/ready-charcoal.png" width="180" alt="Ready stopwatch on a black circular display"> | <img src="previews/running-total.gif" width="180" alt="Running stopwatch animation showing only the total time"> | <img src="previews/lap-charcoal.png" width="180" alt="Stopwatch showing a recorded lap below the total"> | <img src="previews/hours-charcoal.png" width="180" alt="Stopwatch showing 12:34:56.78 with hour digits"> |
 
 Hold the device with both buttons on top.
 

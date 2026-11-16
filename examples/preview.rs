@@ -46,7 +46,7 @@ fn main() {
     let out = Path::new(&out);
     std::fs::create_dir_all(out).unwrap();
     let mut s = Stopwatch::default();
-    save(out, "ready-hold", &s, 0);
+    save(out, "ready-charcoal", &s, 0);
     s.press(Button::StartPause, 0);
     save(out, "running-charcoal", &s, 83_470_000);
     s.press(Button::LapReset, 74_320_000);
