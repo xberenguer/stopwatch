@@ -13,16 +13,30 @@ fn save(out: &Path, name: &str, watch: &Stopwatch, now: u64) {
     let mut fb = vec![0; PIXELS];
     Renderer::default().draw(&mut fb, &mut Rows::default(), watch, now, || {});
     let mut file = BufWriter::new(File::create(out.join(format!("{name}.ppm"))).unwrap());
-    write!(file, "P6\n{W} {W}\n255\n").unwrap();
-    for y in 0..W {
-        for x in 0..W {
-            let (nx, ny) = native_xy(x, y);
-            let c = u16::from_be(fb[ny * W + nx]);
-            let rgb = [
-                ((c >> 11) * 255 / 31) as u8,
-                (((c >> 5) & 63) * 255 / 63) as u8,
-                ((c & 31) * 255 / 31) as u8,
-            ];
+    let size = W + 64;
+    let background = [231, 229, 224];
+    write!(file, "P6\n{size} {size}\n255\n").unwrap();
+    for y in 0..size {
+        for x in 0..size {
+            let mut rgb = background;
+            if (32..W + 32).contains(&x) && (32..W + 32).contains(&y) {
+                let (sx, sy) = (x - 32, y - 32);
+                let (nx, ny) = native_xy(sx, sy);
+                let c = u16::from_be(fb[ny * W + nx]);
+                let screen = [
+                    ((c >> 11) * 255 / 31) as u8,
+                    (((c >> 5) & 63) * 255 / 63) as u8,
+                    ((c & 31) * 255 / 31) as u8,
+                ];
+                let dx = sx as f32 + 0.5 - W as f32 / 2.0;
+                let dy = sy as f32 + 0.5 - W as f32 / 2.0;
+                let coverage = (W as f32 / 2.0 - dx.hypot(dy) + 0.5).clamp(0.0, 1.0);
+                for i in 0..3 {
+                    rgb[i] = (f32::from(screen[i]) * coverage
+                        + f32::from(background[i]) * (1.0 - coverage))
+                        .round() as u8;
+                }
+            }
             file.write_all(&rgb).unwrap();
         }
     }
@@ -42,4 +56,15 @@ fn main() {
     let mut long = Stopwatch::default();
     long.press(Button::StartPause, 0);
     save(out, "hours", &long, 45_296_780_000);
+    if env::args().any(|arg| arg == "--animate") {
+        let frames = out.join("frames");
+        std::fs::create_dir_all(&frames).unwrap();
+        // A real running total and a fixed lap interval, rendered by the firmware code.
+        let mut running = Stopwatch::default();
+        running.press(Button::StartPause, 0);
+        running.press(Button::LapReset, 74_320_000);
+        for frame in 0..80 {
+            save(&frames, &format!("{frame:03}"), &running, 83_000_000 + frame * 50_000);
+        }
+    }
 }

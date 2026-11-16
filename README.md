@@ -4,7 +4,9 @@ A minimal, button-only Rust stopwatch for the Waveshare ESP32-S3-Touch-AMOLED-1.
 
 [Flash over USB](https://xn--sg8hhb.ws/flasher/?project=stopwatch) · [Get the device](https://www.waveshare.com/esp32-s3-touch-amoled-1.75c.htm) · [Firmware](https://github.com/xberenguer/stopwatch/releases/latest)
 
-<img src="previews/ready.png" width="260" alt="Stopwatch display">
+| Ready | Running | Lap |
+|---|---|---|
+| <img src="previews/ready.png" width="220" alt="Ready stopwatch on a black circular display"> | <img src="previews/running.gif" width="220" alt="Running stopwatch animation with the latest lap time below the total"> | <img src="previews/lap.png" width="220" alt="Stopwatch showing a recorded lap below the total"> |
 
 Hold the device with both buttons on top.
 
