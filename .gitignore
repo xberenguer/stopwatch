@@ -1,0 +1,6 @@
+/target/
+/firmware/target/
+/.venv/
+/private-backups/
+__pycache__/
+*.ppm

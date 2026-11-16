@@ -1,0 +1,20 @@
+[package]
+name = "stopwatch-firmware"
+version = "1.0.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+stopwatch = { path = ".." }
+esp-hal = { version = "=1.2.2", features = ["esp32s3", "unstable"] }
+esp-bootloader-esp-idf = { version = "=0.6.0", features = ["esp32s3"] }
+esp-println = { version = "=0.17.0", default-features = false, features = ["esp32s3", "jtag-serial"] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+opt-level = 2
