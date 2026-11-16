@@ -59,10 +59,9 @@ fn main() {
     if env::args().any(|arg| arg == "--animate") {
         let frames = out.join("frames");
         std::fs::create_dir_all(&frames).unwrap();
-        // A real running total and a fixed lap interval, rendered by the firmware code.
+        // A running total without laps, rendered by the firmware code.
         let mut running = Stopwatch::default();
         running.press(Button::StartPause, 0);
-        running.press(Button::LapReset, 74_320_000);
         for frame in 0..80 {
             save(&frames, &format!("{frame:03}"), &running, 83_000_000 + frame * 50_000);
         }
