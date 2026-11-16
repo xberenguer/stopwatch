@@ -142,9 +142,15 @@ impl Renderer {
             c.text(&font::LABEL, action, (155, 118), 108, false);
             c.text(
                 &font::LABEL,
-                if watch.running() { "LAP" } else { "RESET" },
+                if watch.running() {
+                    "LAP"
+                } else if elapsed == 0 {
+                    "HOLD OFF"
+                } else {
+                    "RESET"
+                },
                 (311, 118),
-                if elapsed == 0 { 58 } else { 108 },
+                108,
                 false,
             );
             self.last_buttons = Some(buttons);

@@ -59,6 +59,10 @@ impl Panel {
         self.reg(0x29, &[]);
         self.reg(0x51, &[128]);
     }
+    pub fn hide(&mut self) {
+        self.reg(0x51, &[0]);
+        self.reg(0x28, &[]);
+    }
     pub fn flush(&mut self, fb: &[u16], rows: &Rows, mut poll: impl FnMut()) {
         for y in (0..W).step_by(16) {
             let h = 16.min(W - y);

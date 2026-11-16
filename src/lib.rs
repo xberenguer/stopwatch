@@ -5,6 +5,8 @@ pub mod render;
 
 /// Largest displayable time: 99 hours, 59 minutes, 59.99 seconds.
 pub const MAX_US: u64 = 359_999_990_000;
+const DEBOUNCE_US: u64 = 12_000;
+const HOLD_US: u64 = 600_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Button {
@@ -61,6 +63,45 @@ impl Stopwatch {
     }
 }
 
+/// Hold-to-off is available only when the press begins stopped at zero.
+pub struct Controls {
+    pub watch: Stopwatch,
+    pub screen_on: bool,
+    hold_us: Option<u64>,
+}
+impl Default for Controls {
+    fn default() -> Self {
+        Self { watch: Stopwatch::default(), screen_on: true, hold_us: None }
+    }
+}
+impl Controls {
+    pub fn press(&mut self, button: Button, now_us: u64) {
+        if !self.screen_on {
+            self.screen_on = true;
+            if button == Button::StartPause {
+                self.watch.press(button, now_us);
+            }
+        } else if button == Button::StartPause
+            || self.watch.running()
+            || self.watch.elapsed_us(now_us) != 0
+        {
+            self.hold_us = None;
+            self.watch.press(button, now_us);
+        } else {
+            self.hold_us = Some(now_us);
+        }
+    }
+    pub fn tick(&mut self, now_us: u64, small_held: bool) {
+        if !small_held {
+            self.hold_us = None;
+        } else if self.hold_us.is_some_and(|t| now_us.saturating_sub(t) >= HOLD_US) {
+            self.hold_us = None;
+            self.screen_on = false;
+        }
+        self.watch.tick(now_us);
+    }
+}
+
 /// Accept an edge after 12 ms of stability, preserving its first observed time.
 /// A held key at startup must be released before it can generate a press.
 #[derive(Default)]
@@ -82,7 +123,7 @@ impl Debouncer {
             self.raw = pressed;
             self.changed_us = now_us;
         }
-        if self.stable != Some(self.raw) && now_us.saturating_sub(self.changed_us) >= 12_000 {
+        if self.stable != Some(self.raw) && now_us.saturating_sub(self.changed_us) >= DEBOUNCE_US {
             self.stable = Some(self.raw);
             return self.raw.then_some(self.changed_us);
         }

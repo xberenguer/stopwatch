@@ -17,7 +17,7 @@ for name, size in [('LARGE', 80), ('COMPACT', 57), ('SMALL', 23), ('LABEL', 16)]
     data = bytearray()
     glyphs = []
     digit_width = round(max(font.getlength(str(i)) for i in range(10)) / scale) + 1
-    for c in dict.fromkeys(chars):
+    for c in dict.fromkeys(chars + ('HODF' if name == 'LABEL' else '')):
         l, t, r, b = font.getbbox(c, anchor='ls')
         w, h = max(1, (r - l + scale - 1) // scale), max(1, (b - t + scale - 1) // scale)
         im = Image.new('L', (w * scale, h * scale))

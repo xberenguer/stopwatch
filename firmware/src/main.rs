@@ -1,12 +1,13 @@
 #![no_std]
 #![no_main]
+mod idle;
 mod panel;
 
 use esp_hal::{
     clock::CpuClock,
     delay::Delay,
     dma_rx_buffer, dma_tx_buffer,
-    gpio::{Input, InputConfig, Level, Output, OutputConfig, Pull},
+    gpio::{Input, InputConfig, Io, Level, Output, OutputConfig, Pull},
     i2c::master::{Config as I2cConfig, I2c},
     psram::{Psram, PsramConfig, PsramMode, PsramSize, SpiRamFreq},
     spi::{
@@ -16,7 +17,7 @@ use esp_hal::{
     time::{Instant, Rate},
 };
 use stopwatch::{
-    Button, Debouncer, Stopwatch,
+    Button, Controls, Debouncer,
     render::{PIXELS, Renderer, Rows},
 };
 esp_bootloader_esp_idf::esp_app_desc!();
@@ -49,7 +50,7 @@ impl Inputs {
             self.pending[1] = Some((Button::LapReset, t));
         }
     }
-    fn apply(&mut self, watch: &mut Stopwatch) {
+    fn apply(&mut self, controls: &mut Controls) {
         // Timestamp order is preserved when both edges arrive during a transfer.
         let a = self.pending[0].take();
         let b = self.pending[1].take();
@@ -58,14 +59,49 @@ impl Inputs {
             _ => [a, b],
         };
         for (button, time) in events.into_iter().flatten() {
-            watch.press(button, time);
+            controls.press(button, time);
         }
+    }
+    fn wake(&mut self) -> (Button, u64) {
+        let mut start = Debouncer::default();
+        let mut lap = Debouncer::default();
+        let mut released = None;
+        start.poll(self.start.is_high(), micros());
+        lap.poll(self.lap.is_low(), micros()); // Ignore the held screen-off key.
+        let event = loop {
+            let now = micros();
+            let a = self.start.is_high();
+            let b = self.lap.is_low();
+            if let Some(t) = start.poll(a, now) {
+                break (Button::StartPause, t);
+            }
+            if let Some(t) = lap.poll(b, now) {
+                break (Button::LapReset, t);
+            }
+            if a || b {
+                released = None;
+            } else {
+                let since = *released.get_or_insert(now);
+                if now - since >= 12_000 {
+                    idle::wait(&mut self.start, &mut self.lap);
+                    continue;
+                }
+            }
+            Delay::new().delay_micros(200);
+        };
+        self.start_debounce = Debouncer::default();
+        self.lap_debounce = Debouncer::default();
+        self.pending = [None; 2];
+        self.poll(); // Ignore keys still held after waking.
+        event
     }
 }
 
 #[esp_hal::main]
 fn main() -> ! {
     let p = esp_hal::init(esp_hal::Config::default().with_cpu_clock(CpuClock::max()));
+    let mut io = Io::new(p.IO_MUX);
+    idle::setup(&mut io);
     // Buttons only. Touch stays in reset and the speaker amplifier stays off.
     let _touch_reset = Output::new(p.GPIO2, Level::Low, OutputConfig::default());
     let _amp = Output::new(p.GPIO46, Level::Low, OutputConfig::default());
@@ -128,11 +164,11 @@ fn main() -> ! {
     .with_buffers(dma_rx_buffer!(4).unwrap(), dma_tx_buffer!(64).unwrap());
     let mut reset = Output::new(p.GPIO1, Level::High, OutputConfig::default());
     let mut panel = panel::Panel::new(spi, dma_tx_buffer!(16000).unwrap(), &mut reset);
-    let mut watch = Stopwatch::default();
+    let mut controls = Controls::default();
     let mut renderer = Renderer::default();
     let mut rows = Rows::default();
     rows.full();
-    renderer.draw(fb, &mut rows, &watch, micros(), || inputs.poll());
+    renderer.draw(fb, &mut rows, &controls.watch, micros(), || inputs.poll());
     panel.flush(fb, &rows, || inputs.poll());
     rows.clear();
     panel.show();
@@ -140,11 +176,23 @@ fn main() -> ! {
     let mut last_frame = 0;
     loop {
         inputs.poll();
-        inputs.apply(&mut watch);
+        inputs.apply(&mut controls);
         let now = micros();
-        watch.tick(now);
+        controls.tick(now, inputs.lap.is_low());
+        if !controls.screen_on {
+            panel.hide();
+            let (button, time) = inputs.wake();
+            controls.press(button, time);
+            controls.tick(micros(), inputs.lap.is_low());
+            renderer.draw(fb, &mut rows, &controls.watch, micros(), || inputs.poll());
+            panel.flush(fb, &rows, || inputs.poll());
+            rows.clear();
+            panel.show();
+            last_frame = micros();
+            continue;
+        }
         if now - last_frame >= 20_000 {
-            renderer.draw(fb, &mut rows, &watch, now, || inputs.poll());
+            renderer.draw(fb, &mut rows, &controls.watch, now, || inputs.poll());
             panel.flush(fb, &rows, || inputs.poll());
             rows.clear();
             last_frame = now;

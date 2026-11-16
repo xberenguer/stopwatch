@@ -1259,11 +1259,11 @@ dependencies = [
 
 [[package]]
 name = "stopwatch"
-version = "1.0.0"
+version = "1.1.0"
 
 [[package]]
 name = "stopwatch-firmware"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "esp-bootloader-esp-idf",
  "esp-hal",
