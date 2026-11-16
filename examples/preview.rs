@@ -14,7 +14,7 @@ fn save(out: &Path, name: &str, watch: &Stopwatch, now: u64) {
     Renderer::default().draw(&mut fb, &mut Rows::default(), watch, now, || {});
     let mut file = BufWriter::new(File::create(out.join(format!("{name}.ppm"))).unwrap());
     let size = W + 64;
-    let background = [231, 229, 224];
+    let background = [19, 24, 30];
     write!(file, "P6\n{size} {size}\n255\n").unwrap();
     for y in 0..size {
         for x in 0..size {
@@ -46,16 +46,16 @@ fn main() {
     let out = Path::new(&out);
     std::fs::create_dir_all(out).unwrap();
     let mut s = Stopwatch::default();
-    save(out, "ready-round", &s, 0);
+    save(out, "ready-charcoal", &s, 0);
     s.press(Button::StartPause, 0);
-    save(out, "running-round", &s, 83_470_000);
+    save(out, "running-charcoal", &s, 83_470_000);
     s.press(Button::LapReset, 74_320_000);
-    save(out, "lap-round", &s, 83_470_000);
+    save(out, "lap-charcoal", &s, 83_470_000);
     s.press(Button::StartPause, 83_470_000);
-    save(out, "paused-round", &s, 100_000_000);
+    save(out, "paused-charcoal", &s, 100_000_000);
     let mut long = Stopwatch::default();
     long.press(Button::StartPause, 0);
-    save(out, "hours-round", &long, 45_296_780_000);
+    save(out, "hours-charcoal", &long, 45_296_780_000);
     if env::args().any(|arg| arg == "--animate") {
         let frames = out.join("frames");
         std::fs::create_dir_all(&frames).unwrap();
