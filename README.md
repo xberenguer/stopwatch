@@ -1,25 +1,34 @@
 # Stopwatch
 
-A minimal, button-only Rust stopwatch for the Waveshare ESP32-S3-Touch-AMOLED-1.75C.
+A two-button stopwatch for the round Waveshare ESP32-S3-Touch-AMOLED-1.75C, with lap timing, a hold-to-view battery percentage, and light sleep on battery power.
 
-[Flash over USB](https://xn--sg8hhb.ws/flasher/?project=stopwatch) · [Get the device](https://www.waveshare.com/esp32-s3-touch-amoled-1.75c.htm) · [Firmware](https://github.com/xberenguer/stopwatch/releases/latest)
+[Flash over USB](https://xn--sg8hhb.ws/flasher/?project=stopwatch) · [Latest firmware release](https://github.com/xberenguer/stopwatch/releases/latest) · [Get the device](https://www.waveshare.com/esp32-s3-touch-amoled-1.75c.htm)
 
 | Ready | Running | Lap | Hours |
 |---|---|---|---|
 | <img src="previews/ready-charcoal.png" width="180" alt="Ready stopwatch on a black circular display"> | <img src="previews/running-total.gif" width="180" alt="Running stopwatch animation showing only the total time"> | <img src="previews/lap-charcoal.png" width="180" alt="Stopwatch showing a recorded lap below the total"> | <img src="previews/hours-charcoal.png" width="180" alt="Stopwatch showing 12:34:56.78 with hour digits"> |
 
+## Controls
+
 Hold the device with both buttons on top.
 
-| Button | Running | Paused |
-|---|---|---|
-| Large, top left | Pause | Start / resume |
-| Small, top right | Lap | Reset |
+| Tap | Running | Stopped | Asleep |
+|---|---|---|---|
+| Large, top left | Pause | Start or resume | Wake and start |
+| Small, top right | Record lap | Reset | Wake to zero |
 
-When stopped at zero, hold the small button for 0.6 seconds to turn the screen off. Keep holding for 1.2 seconds total to see the battery percentage until you release. Releasing after either threshold puts the stopwatch to sleep. A small-button press wakes the screen. A large-button press wakes it and starts timing.
+The first lap measures from the start. Later laps measure from the previous lap. The screen shows the most recent lap beneath the running total.
 
-On battery power, turning the screen off enters ESP32 light sleep. If USB power is connected when the screen turns off, the USB flasher remains available.
+## Battery and sleep
 
-Laps are immediate. Only the latest lap is kept.
+Start with the stopwatch stopped at zero. Use one continuous hold on the small button.
+
+- **At 0.6 seconds**, the screen goes dark. Release to sleep.
+- **At 1.2 seconds total**, the battery percentage appears in grey at the center. Release to turn the display off again and sleep.
+
+<img src="previews/battery-charcoal.png" width="240" alt="Example battery reading of 63 percent, centered in grey on the black display">
+
+On battery power, the ESP32 enters light sleep after you release. When you turn off the screen on USB power, the USB flasher remains available.
 
 ## Build
 
