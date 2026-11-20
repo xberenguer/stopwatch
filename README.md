@@ -4,9 +4,13 @@ A two-button stopwatch for the round Waveshare ESP32-S3-Touch-AMOLED-1.75C, with
 
 [Flash over USB](https://xn--sg8hhb.ws/flasher/?project=stopwatch) · [Latest firmware release](https://github.com/xberenguer/stopwatch/releases/latest) · [Get the device](https://www.waveshare.com/esp32-s3-touch-amoled-1.75c.htm)
 
-| Ready | Running | Lap | Hours | Battery |
-|---|---|---|---|---|
-| <img src="previews/ready-charcoal.png" width="180" alt="Ready stopwatch on a black circular display"> | <img src="previews/running-total.gif" width="180" alt="Running stopwatch animation showing only the total time"> | <img src="previews/lap-charcoal.png" width="180" alt="Stopwatch showing a recorded lap below the total"> | <img src="previews/hours-charcoal.png" width="180" alt="Stopwatch showing 12:34:56.78 with hour digits"> | <img src="previews/battery-charcoal.png" width="180" alt="Example battery reading of 63 percent, centered in grey on the black display"> |
+<p align="center">
+  <a href="previews/ready-charcoal.png" title="Ready"><img src="previews/ready-charcoal.png" width="144" alt="Ready stopwatch on a black circular display"></a>
+  <a href="previews/running-total.gif" title="Running"><img src="previews/running-total.gif" width="144" alt="Running stopwatch animation showing only the total time"></a>
+  <a href="previews/lap-charcoal.png" title="Lap"><img src="previews/lap-charcoal.png" width="144" alt="Stopwatch showing a recorded lap below the total"></a>
+  <a href="previews/hours-charcoal.png" title="Hours"><img src="previews/hours-charcoal.png" width="144" alt="Stopwatch showing 12:34:56.78 with hour digits"></a>
+  <a href="previews/battery-charcoal.png" title="Battery"><img src="previews/battery-charcoal.png" width="144" alt="Example battery reading of 63 percent, centered in grey on the black display"></a>
+</p>
 
 ## Controls
 
