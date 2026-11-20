@@ -67,3 +67,34 @@ fn incremental_frames_match_fresh_frames_after_controls_and_hour_transition() {
         assert!(fb == fresh, "stale pixels at {now}");
     }
 }
+
+#[test]
+fn battery_screen_uses_only_the_dim_center_label_and_restores_the_timer() {
+    let watch = Stopwatch::default();
+    let mut renderer = Renderer::default();
+    let mut fb = std::vec![0; PIXELS];
+    let mut rows = Rows::default();
+    renderer.draw(&mut fb, &mut rows, &watch, 0, || {});
+    let ready = fb.clone();
+    for percent in [0, 63, 100] {
+        renderer.draw_battery(&mut fb, &mut rows, percent, || {});
+        let mut bounds = (W, W, 0, 0);
+        let gray = u16::from(INACTIVE_CONTROL_GRAY);
+        let max_color = ((gray >> 3) << 11) | ((gray >> 2) << 5) | (gray >> 3);
+        for (i, &pixel) in fb.iter().enumerate() {
+            if pixel != 0 {
+                assert!(u16::from_be(pixel) <= max_color);
+                let (x, y) = (i / W, W - 1 - i % W);
+                bounds.0 = bounds.0.min(x);
+                bounds.1 = bounds.1.min(y);
+                bounds.2 = bounds.2.max(x);
+                bounds.3 = bounds.3.max(y);
+            }
+        }
+        assert!(bounds.0 < bounds.2 && bounds.1 < bounds.3);
+        assert!((bounds.0 + bounds.2).abs_diff(W - 1) <= 4, "{bounds:?}");
+        assert!((bounds.1 + bounds.3).abs_diff(W - 1) <= 4, "{bounds:?}");
+        renderer.draw(&mut fb, &mut rows, &watch, 0, || {});
+        assert_eq!(fb, ready);
+    }
+}

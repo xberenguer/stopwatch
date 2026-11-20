@@ -66,18 +66,31 @@ impl Stopwatch {
 /// Hold-to-off is available only when the press begins stopped at zero.
 pub struct Controls {
     pub watch: Stopwatch,
-    pub screen_on: bool,
+    screen: Screen,
     hold_us: Option<u64>,
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Screen {
+    Timer,
+    Sleep,
+    Blackout { battery_at_us: u64 },
+    Battery,
+}
+
 impl Default for Controls {
     fn default() -> Self {
-        Self { watch: Stopwatch::default(), screen_on: true, hold_us: None }
+        Self { watch: Stopwatch::default(), screen: Screen::Timer, hold_us: None }
     }
 }
 impl Controls {
+    pub fn screen(&self) -> Screen {
+        self.screen
+    }
+
     pub fn press(&mut self, button: Button, now_us: u64) {
-        if !self.screen_on {
-            self.screen_on = true;
+        if self.screen != Screen::Timer {
+            self.screen = Screen::Timer;
             if button == Button::StartPause {
                 self.watch.press(button, now_us);
             }
@@ -92,11 +105,23 @@ impl Controls {
         }
     }
     pub fn tick(&mut self, now_us: u64, small_held: bool) {
-        if !small_held {
-            self.hold_us = None;
-        } else if self.hold_us.is_some_and(|t| now_us.saturating_sub(t) >= HOLD_US) {
-            self.hold_us = None;
-            self.screen_on = false;
+        match self.screen {
+            Screen::Timer => {
+                if !small_held {
+                    self.hold_us = None;
+                } else if let Some(pressed_at) = self.hold_us
+                    && now_us.saturating_sub(pressed_at) >= HOLD_US
+                {
+                    self.hold_us = None;
+                    self.screen =
+                        Screen::Blackout { battery_at_us: pressed_at.saturating_add(2 * HOLD_US) };
+                }
+            }
+            Screen::Blackout { .. } | Screen::Battery if !small_held => self.screen = Screen::Sleep,
+            Screen::Blackout { battery_at_us } if now_us >= battery_at_us => {
+                self.screen = Screen::Battery;
+            }
+            _ => {}
         }
         self.watch.tick(now_us);
     }

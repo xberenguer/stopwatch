@@ -3,6 +3,7 @@ use esp_hal::{
     gpio::{Event, Input, Io},
     interrupt::{ElevatedRunLevel, Priority, RunLevel, wait_for_interrupt},
     peripherals::{GPIO, SYSTEM},
+    rtc_cntl::sleep::{LowPower, RtcSleepConfig},
     timer::systimer::{SystemTimer, Unit, UnitConfig},
 };
 
@@ -24,6 +25,21 @@ fn wake() {
     }
     gpio.status_w1tc().write(|w| unsafe { w.status_w1tc().bits(1 | 1 << 3) });
     WOKE.store(true, Ordering::Release);
+}
+
+pub fn light_sleep(power: &mut LowPower<'_>, start: &mut Input<'_>, lap: &mut Input<'_>) {
+    // Keep the GPIO ISR from clearing the wake request between arming and sleep entry.
+    let old = unsafe { RunLevel::change(RunLevel::Interrupt(ElevatedRunLevel::Level1)) };
+    start.listen(Event::HighLevel);
+    lap.listen(Event::LowLevel);
+    if !start.is_high() && !lap.is_low() {
+        power.sleep_light(RtcSleepConfig::default());
+    }
+    start.unlisten();
+    lap.unlisten();
+    start.clear_interrupt();
+    lap.clear_interrupt();
+    unsafe { RunLevel::change(old) };
 }
 
 pub fn wait(start: &mut Input<'_>, lap: &mut Input<'_>) {

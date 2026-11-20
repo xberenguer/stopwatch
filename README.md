@@ -15,7 +15,9 @@ Hold the device with both buttons on top.
 | Large, top left | Pause | Start / resume |
 | Small, top right | Lap | Reset |
 
-When stopped at zero, hold the small button for 0.6 seconds to turn the screen off. A small-button press wakes the screen. A large-button press wakes it and starts timing.
+When stopped at zero, hold the small button for 0.6 seconds to turn the screen off. Keep holding for 1.2 seconds total to see the battery percentage until you release. Releasing after either threshold puts the stopwatch to sleep. A small-button press wakes the screen. A large-button press wakes it and starts timing.
+
+On battery power, turning the screen off enters ESP32 light sleep. If USB power is connected when the screen turns off, the USB flasher remains available.
 
 Laps are immediate. Only the latest lap is kept.
 

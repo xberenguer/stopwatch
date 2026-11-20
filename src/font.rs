@@ -8,6 +8,9 @@ pub struct Glyph {
     pub data: &'static [u8],
 }
 impl Font {
+    // Keep the lookup shared. Specializing it for the small battery font on
+    // Xtensa produced a pointer table the firmware could not read reliably.
+    #[inline(never)]
     pub fn glyph(&self, ch: u8) -> Option<Glyph> {
         let end = 1 + self.0[0] as usize * 7;
         let m = self.0[1..end].chunks_exact(7).find(|m| m[0] == ch)?;
@@ -28,3 +31,4 @@ pub static LARGE: Font = Font(include_bytes!("../assets/large.bin"));
 pub static COMPACT: Font = Font(include_bytes!("../assets/compact.bin"));
 pub static SMALL: Font = Font(include_bytes!("../assets/small.bin"));
 pub static LABEL: Font = Font(include_bytes!("../assets/label.bin"));
+pub static BATTERY: Font = Font(include_bytes!("../assets/battery.bin"));

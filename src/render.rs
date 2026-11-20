@@ -6,6 +6,7 @@ use font::Font;
 
 pub const W: usize = 466;
 pub const PIXELS: usize = W * W;
+const INACTIVE_CONTROL_GRAY: u8 = 58;
 
 /// Changed columns on each native panel row.
 pub struct Rows {
@@ -111,6 +112,33 @@ pub struct Renderer {
     last_laps: u32,
 }
 impl Renderer {
+    pub fn draw_battery(
+        &mut self,
+        fb: &mut [u16],
+        rows: &mut Rows,
+        percent: u8,
+        poll: impl FnMut(),
+    ) {
+        assert_eq!(fb.len(), PIXELS);
+        let mut c = Canvas { fb, rows, poll };
+        for (y, row) in c.fb.chunks_exact_mut(W).enumerate() {
+            for (x, pixel) in row.iter_mut().enumerate() {
+                if *pixel != 0 {
+                    *pixel = 0;
+                    c.rows.mark(x, y);
+                }
+            }
+            (c.poll)();
+        }
+        let mut label = Text::default();
+        write!(label, "{percent}%").unwrap();
+        let font = &font::BATTERY;
+        let percent_glyph = font.glyph(b'%').unwrap();
+        let baseline = W as i32 / 2 - percent_glyph.top - percent_glyph.h as i32 / 2;
+        c.text(font, label.as_str(), (W as i32 / 2, baseline), INACTIVE_CONTROL_GRAY, false);
+        *self = Self::default();
+    }
+
     pub fn draw(
         &mut self,
         fb: &mut [u16],
@@ -144,7 +172,7 @@ impl Renderer {
                 &font::LABEL,
                 if watch.running() { "LAP" } else { "RESET" },
                 (311, 118),
-                if elapsed == 0 { 58 } else { 108 },
+                if elapsed == 0 { INACTIVE_CONTROL_GRAY } else { 108 },
                 false,
             );
             self.last_buttons = Some(buttons);

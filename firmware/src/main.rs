@@ -10,6 +10,7 @@ use esp_hal::{
     gpio::{Input, InputConfig, Io, Level, Output, OutputConfig, Pull},
     i2c::master::{Config as I2cConfig, I2c},
     psram::{Psram, PsramConfig, PsramMode, PsramSize, SpiRamFreq},
+    rtc_cntl::sleep::LowPower,
     spi::{
         self,
         master::{Config as SpiConfig, Spi},
@@ -17,7 +18,7 @@ use esp_hal::{
     time::{Instant, Rate},
 };
 use stopwatch::{
-    Button, Controls, Debouncer,
+    Button, Controls, Debouncer, Screen,
     render::{PIXELS, Renderer, Rows},
 };
 esp_bootloader_esp_idf::esp_app_desc!();
@@ -31,6 +32,24 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 }
 fn micros() -> u64 {
     Instant::now().duration_since_epoch().as_micros()
+}
+
+const PMIC_STATUS: u8 = 0x00;
+const BATTERY_PRESENT: u8 = 1 << 3;
+const USB_POWER_GOOD: u8 = 1 << 5;
+
+fn read_pmic(i2c: &mut I2c<'_, esp_hal::Blocking>, register: u8) -> Option<u8> {
+    let mut value = [0];
+    i2c.write_read(0x34u8, &[register], &mut value).ok()?;
+    Some(value[0])
+}
+
+fn battery_percent(i2c: &mut I2c<'_, esp_hal::Blocking>) -> Option<u8> {
+    if read_pmic(i2c, PMIC_STATUS)? & BATTERY_PRESENT == 0 || read_pmic(i2c, 0x18)? & (1 << 3) == 0
+    {
+        return None;
+    }
+    read_pmic(i2c, 0xa4).filter(|&percent| percent <= 100)
 }
 
 struct Inputs {
@@ -62,7 +81,7 @@ impl Inputs {
             controls.press(button, time);
         }
     }
-    fn wake(&mut self) -> (Button, u64) {
+    fn wake(&mut self, mut power: Option<&mut LowPower<'_>>) -> (Button, u64) {
         let mut start = Debouncer::default();
         let mut lap = Debouncer::default();
         let mut released = None;
@@ -83,7 +102,11 @@ impl Inputs {
             } else {
                 let since = *released.get_or_insert(now);
                 if now - since >= 12_000 {
-                    idle::wait(&mut self.start, &mut self.lap);
+                    if let Some(power) = power.as_deref_mut() {
+                        idle::light_sleep(power, &mut self.start, &mut self.lap);
+                    } else {
+                        idle::wait(&mut self.start, &mut self.lap);
+                    }
                     continue;
                 }
             }
@@ -100,6 +123,7 @@ impl Inputs {
 #[esp_hal::main]
 fn main() -> ! {
     let p = esp_hal::init(esp_hal::Config::default().with_cpu_clock(CpuClock::max()));
+    let mut power = LowPower::new(p.LPWR);
     let mut io = Io::new(p.IO_MUX);
     idle::setup(&mut io);
     // Buttons only. Touch stays in reset and the speaker amplifier stays off.
@@ -174,29 +198,49 @@ fn main() -> ! {
     panel.show();
     let delay = Delay::new();
     let mut last_frame = 0;
+    let mut shown = Screen::Timer;
     loop {
         inputs.poll();
         inputs.apply(&mut controls);
         let now = micros();
         controls.tick(now, inputs.lap.is_low());
-        if !controls.screen_on {
-            panel.hide();
-            let (button, time) = inputs.wake();
-            controls.press(button, time);
-            controls.tick(micros(), inputs.lap.is_low());
-            renderer.draw(fb, &mut rows, &controls.watch, micros(), || inputs.poll());
-            panel.flush(fb, &rows, || inputs.poll());
-            rows.clear();
-            panel.show();
-            last_frame = micros();
-            continue;
+        let screen = controls.screen();
+        let changed = screen != shown;
+        match screen {
+            Screen::Sleep => {
+                panel.hide();
+                shown = Screen::Sleep;
+                // Keep USB Serial/JTAG responsive when the display is turned off on USB.
+                let battery_only = read_pmic(&mut i2c, PMIC_STATUS).is_some_and(|status| {
+                    status & (BATTERY_PRESENT | USB_POWER_GOOD) == BATTERY_PRESENT
+                });
+                let (button, time) = inputs.wake(battery_only.then_some(&mut power));
+                controls.press(button, time);
+                continue;
+            }
+            Screen::Blackout { .. } if changed => panel.hide(),
+            Screen::Battery if changed => {
+                if let Some(percent) = battery_percent(&mut i2c) {
+                    renderer.draw_battery(fb, &mut rows, percent, || inputs.poll());
+                    panel.flush(fb, &rows, || inputs.poll());
+                    rows.clear();
+                    if inputs.lap.is_low() {
+                        panel.show();
+                    }
+                }
+            }
+            Screen::Timer if changed || now - last_frame >= 20_000 => {
+                renderer.draw(fb, &mut rows, &controls.watch, now, || inputs.poll());
+                panel.flush(fb, &rows, || inputs.poll());
+                rows.clear();
+                if changed {
+                    panel.show();
+                }
+                last_frame = now;
+            }
+            _ => {}
         }
-        if now - last_frame >= 20_000 {
-            renderer.draw(fb, &mut rows, &controls.watch, now, || inputs.poll());
-            panel.flush(fb, &rows, || inputs.poll());
-            rows.clear();
-            last_frame = now;
-        }
+        shown = screen;
         delay.delay_micros(200);
     }
 }
