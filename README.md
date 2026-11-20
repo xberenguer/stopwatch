@@ -4,9 +4,9 @@ A two-button stopwatch for the round Waveshare ESP32-S3-Touch-AMOLED-1.75C, with
 
 [Flash over USB](https://xn--sg8hhb.ws/flasher/?project=stopwatch) · [Latest firmware release](https://github.com/xberenguer/stopwatch/releases/latest) · [Get the device](https://www.waveshare.com/esp32-s3-touch-amoled-1.75c.htm)
 
-| Ready | Running | Lap | Hours |
-|---|---|---|---|
-| <img src="previews/ready-charcoal.png" width="180" alt="Ready stopwatch on a black circular display"> | <img src="previews/running-total.gif" width="180" alt="Running stopwatch animation showing only the total time"> | <img src="previews/lap-charcoal.png" width="180" alt="Stopwatch showing a recorded lap below the total"> | <img src="previews/hours-charcoal.png" width="180" alt="Stopwatch showing 12:34:56.78 with hour digits"> |
+| Ready | Running | Lap | Hours | Battery |
+|---|---|---|---|---|
+| <img src="previews/ready-charcoal.png" width="180" alt="Ready stopwatch on a black circular display"> | <img src="previews/running-total.gif" width="180" alt="Running stopwatch animation showing only the total time"> | <img src="previews/lap-charcoal.png" width="180" alt="Stopwatch showing a recorded lap below the total"> | <img src="previews/hours-charcoal.png" width="180" alt="Stopwatch showing 12:34:56.78 with hour digits"> | <img src="previews/battery-charcoal.png" width="180" alt="Example battery reading of 63 percent, centered in grey on the black display"> |
 
 ## Controls
 
@@ -25,8 +25,6 @@ Start with the stopwatch stopped at zero. Use one continuous hold on the small b
 
 - **At 0.6 seconds**, the screen goes dark. Release to sleep.
 - **At 1.2 seconds total**, the battery percentage appears in grey at the center. Release to turn the display off again and sleep.
-
-<img src="previews/battery-charcoal.png" width="240" alt="Example battery reading of 63 percent, centered in grey on the black display">
 
 On battery power, the ESP32 enters light sleep after you release. When you turn off the screen on USB power, the USB flasher remains available.
 
